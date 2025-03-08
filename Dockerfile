@@ -1,7 +1,7 @@
 FROM eclipse-temurin:17-jdk AS build
 WORKDIR /app
 
-# Önce bağımlılıkları kopyalayın (önbelleği iyileştirmek için)
+# Bağımlılıkları kopyalayın ve yükleyin
 COPY pom.xml mvnw ./
 COPY .mvn .mvn
 RUN chmod +x mvnw
@@ -16,12 +16,9 @@ FROM eclipse-temurin:17-jre
 WORKDIR /app
 COPY --from=build /app/target/talepyonetimbackend-0.0.1-SNAPSHOT.jar app.jar
 
-# Çevre değişkenlerini tanımlayın
-ENV SPRING_DATASOURCE_URL=${JDBC_DATABASE_URL}
-ENV SPRING_DATASOURCE_USERNAME=${JDBC_DATABASE_USERNAME}
-ENV SPRING_DATASOURCE_PASSWORD=${JDBC_DATABASE_PASSWORD}
-ENV SPRING_PROFILES_ACTIVE=prod
-ENV PORT=8080
-
+# Port'u açıkça belirtin
+ENV SERVER_PORT=8080
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+
+# Uygulamayı başlatın ve port'u açıkça belirtin
+CMD ["java", "-jar", "-Dserver.port=8080", "app.jar"]
