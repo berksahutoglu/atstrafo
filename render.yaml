@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: atstrafo
+    runtime: java
+    plan: free
+    region: frankfurt
+    buildCommand: echo "JAR dosyası zaten hazır!"
+    startCommand: java -Dserver.port=$PORT -jar target/talepyonetimbackend-0.0.1-SNAPSHOT.jar
+    envVars:
+      - key: JDBC_DATABASE_URL
+        value: jdbc:postgresql://ep-frosty-paper-a5q8quo5-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require
+      - key: JDBC_DATABASE_USERNAME
+        value: neondb_owner
+      - key: JDBC_DATABASE_PASSWORD
+        value: npg_Yxq6d3WhyFNL
+      - key: PORT
+        value: 8080
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
