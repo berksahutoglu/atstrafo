@@ -131,6 +131,53 @@ public class RequestService {
         return mapToDto(savedRequest);
     }
 
+    @Transactional
+    public void deleteRequest(Long requestId) {
+        User currentUser = userService.getCurrentUser();
+        
+        Request request = requestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Talep bulunamadı: " + requestId));
+        
+        // Sadece talep sahibi ve durumu PENDING olanlar silinebilir
+        if (!request.getRequester().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("Bu talebi silme yetkiniz bulunmamaktadır");
+        }
+        
+        if (request.getStatus() != RequestStatus.PENDING) {
+            throw new RuntimeException("Sadece beklemede durumundaki talepler silinebilir");
+        }
+        
+        requestRepository.delete(request);
+    }
+    
+    @Transactional
+    public RequestDto updateRequest(Long requestId, RequestDto requestDto) {
+        User currentUser = userService.getCurrentUser();
+        
+        Request request = requestRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Talep bulunamadı: " + requestId));
+        
+        // Sadece talep sahibi ve durumu PENDING olanlar güncellenebilir
+        if (!request.getRequester().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("Bu talebi güncelleme yetkiniz bulunmamaktadır");
+        }
+        
+        if (request.getStatus() != RequestStatus.PENDING) {
+            throw new RuntimeException("Sadece beklemede durumundaki talepler güncellenebilir");
+        }
+        
+        // Güncelleme işlemi
+        request.setTitle(requestDto.getTitle());
+        request.setDescription(requestDto.getDescription());
+        request.setQuantity(requestDto.getQuantity());
+        request.setUnit(requestDto.getUnit());
+        request.setUrgency(requestDto.getUrgency());
+        
+        Request savedRequest = requestRepository.save(request);
+        
+        return mapToDto(savedRequest);
+    }
+
     private RequestDto mapToDto(Request request) {
         RequestDto dto = new RequestDto();
         dto.setId(request.getId());

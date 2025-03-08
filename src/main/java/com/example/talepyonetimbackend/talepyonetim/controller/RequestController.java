@@ -76,4 +76,19 @@ public class RequestController {
             @Valid @RequestBody DeliveryRequest deliveryRequest) {
         return ResponseEntity.ok(requestService.deliverRequest(id, deliveryRequest));
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ROLE_REQUESTER')")
+    public ResponseEntity<Void> deleteRequest(@PathVariable Long id) {
+        requestService.deleteRequest(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ROLE_REQUESTER')")
+    public ResponseEntity<RequestDto> updateRequest(
+            @PathVariable Long id,
+            @Valid @RequestBody RequestDto requestDto) {
+        return ResponseEntity.ok(requestService.updateRequest(id, requestDto));
+    }
 }
