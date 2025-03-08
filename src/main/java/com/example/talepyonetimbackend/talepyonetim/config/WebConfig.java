@@ -10,7 +10,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")  // Tüm endpoint'ler için
-                .allowedOrigins("https://atstalep.com", "http://localhost:3000", "https://atstrafoclient.vercel.app") // Hem production hem development
+                .allowedOrigins("https://atstalep.com", "http://localhost:3000", "https://atstrafoclient.vercel.app", "https://www.atstalep.com") // Hem production hem development
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("Authorization", "Content-Type", "X-Requested-With", "*")
                 .exposedHeaders("Authorization")
