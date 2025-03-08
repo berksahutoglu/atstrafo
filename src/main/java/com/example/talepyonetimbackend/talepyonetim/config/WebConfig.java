@@ -10,11 +10,11 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")  // Tüm endpoint'ler için
-                .allowedOrigins("http://localhost:3000")
+                .allowedOrigins("*") // Geliştirme aşaması için. Daha sonra frontend domainini ekleyin
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
-                .allowedHeaders("Authorization", "Content-Type", "X-Requested-With")
+                .allowedHeaders("Authorization", "Content-Type", "X-Requested-With", "*")
                 .exposedHeaders("Authorization")
-                .allowCredentials(true)
+                .allowCredentials(false) // * origin kullanıldığında false olmalı
                 .maxAge(3600);
     }
 }
