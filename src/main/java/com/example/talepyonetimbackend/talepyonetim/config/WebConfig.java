@@ -10,11 +10,11 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")  // Tüm endpoint'ler için
-                .allowedOrigins("*") // Geliştirme aşaması için. Daha sonra frontend domainini ekleyin
+                .allowedOrigins("https://atstalep.com", "http://localhost:3000", "https://atstrafoclient.vercel.app") // Hem production hem development
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("Authorization", "Content-Type", "X-Requested-With", "*")
                 .exposedHeaders("Authorization")
-                .allowCredentials(false) // * origin kullanıldığında false olmalı
+                .allowCredentials(true) // Domain belirtildiğinde true olmalı
                 .maxAge(3600);
     }
 }
