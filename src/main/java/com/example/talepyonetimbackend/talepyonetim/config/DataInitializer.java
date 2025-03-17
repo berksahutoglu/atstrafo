@@ -48,6 +48,28 @@ public class DataInitializer {
                 receiver.setRole(Role.ROLE_RECEIVER);
                 receiver.setEnabled(true);
                 userRepository.save(receiver);
+                
+                // Satış ve Pazarlama kullanıcısı
+                User salesAndMarketing = new User();
+                salesAndMarketing.setUsername("sales");
+                salesAndMarketing.setPassword(passwordEncoder.encode("123456"));
+                salesAndMarketing.setFirstName("Satış");
+                salesAndMarketing.setLastName("Pazarlama");
+                salesAndMarketing.setEmail("satis@sirket.com");
+                salesAndMarketing.setRole(Role.ROLE_SALESANDMARKETING);
+                salesAndMarketing.setEnabled(true);
+                userRepository.save(salesAndMarketing);
+                
+                // Üretim kullanıcısı
+                User production = new User();
+                production.setUsername("production");
+                production.setPassword(passwordEncoder.encode("123456"));
+                production.setFirstName("Üretim");
+                production.setLastName("Sorumlusu");
+                production.setEmail("uretim@sirket.com");
+                production.setRole(Role.ROLE_PRODUCTION);
+                production.setEnabled(true);
+                userRepository.save(production);
 
                 System.out.println("Örnek kullanıcılar oluşturuldu!");
             }

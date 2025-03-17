@@ -24,13 +24,13 @@ public class RequestController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('ROLE_REQUESTER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_REQUESTER', 'ROLE_PRODUCTION')")
     public ResponseEntity<RequestDto> createRequest(@Valid @RequestBody RequestDto requestDto) {
         return new ResponseEntity<>(requestService.createRequest(requestDto), HttpStatus.CREATED);
     }
 
     @GetMapping("/my-requests")
-    @PreAuthorize("hasAuthority('ROLE_REQUESTER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_REQUESTER', 'ROLE_PRODUCTION')")
     public ResponseEntity<List<RequestDto>> getMyRequests() {
         return ResponseEntity.ok(requestService.getMyRequests());
     }
@@ -60,6 +60,13 @@ public class RequestController {
     public ResponseEntity<List<RequestDto>> getDeliveredRequests() {
         return ResponseEntity.ok(requestService.getDeliveredRequests());
     }
+    
+    // Üretim departmanı tarafından oluşturulan talepleri getiren endpoint
+    @GetMapping("/production")
+    @PreAuthorize("hasAnyAuthority('ROLE_APPROVER', 'ROLE_PRODUCTION')")
+    public ResponseEntity<List<RequestDto>> getProductionRequests() {
+        return ResponseEntity.ok(requestService.getRequestsByProductionDepartment());
+    }
 
     @PutMapping("/{id}/status")
     @PreAuthorize("hasAuthority('ROLE_APPROVER')")
@@ -78,14 +85,14 @@ public class RequestController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROLE_REQUESTER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_REQUESTER', 'ROLE_PRODUCTION')")
     public ResponseEntity<Void> deleteRequest(@PathVariable Long id) {
         requestService.deleteRequest(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROLE_REQUESTER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_REQUESTER', 'ROLE_PRODUCTION')")
     public ResponseEntity<RequestDto> updateRequest(
             @PathVariable Long id,
             @Valid @RequestBody RequestDto requestDto) {

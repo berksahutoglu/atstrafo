@@ -2,6 +2,7 @@ package com.example.talepyonetimbackend.talepyonetim.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -10,6 +11,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "requests")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Request {
@@ -21,7 +23,7 @@ public class Request {
     @Column(nullable = false)
     private String title;
 
-    @Column(nullable = false, length = 1000)
+    @Column(length = 1000)
     private String description;
 
     @Column(nullable = false)
@@ -74,6 +76,19 @@ public class Request {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+    
+    // İlişki - Bir sipariş içinde birden fazla talep olabilir
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id")
+    private Order order;
+    
+    // Satış ve Pazarlama talebinden dönüştürüldü mü?
+    @OneToOne
+    @JoinColumn(name = "sales_request_id")
+    private SalesAndMarketingRequest salesRequest;
+    
+    // Üretim departmanı tarafından oluşturuldu mu?
+    private boolean createdByProduction = false;
 
     @PrePersist
     protected void onCreate() {

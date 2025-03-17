@@ -18,6 +18,10 @@ public class UserService {
 
     public User getCurrentUser() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return getUserByUsername(username);
+    }
+    
+    public User getUserByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("Kullanıcı bulunamadı: " + username));
     }
@@ -32,4 +36,6 @@ public class UserService {
         userDto.setRole(user.getRole().name());
         return userDto;
     }
+
+
 }

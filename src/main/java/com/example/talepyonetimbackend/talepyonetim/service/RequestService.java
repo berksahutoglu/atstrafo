@@ -4,9 +4,7 @@ import com.example.talepyonetimbackend.talepyonetim.dto.DeliveryRequest;
 import com.example.talepyonetimbackend.talepyonetim.dto.RequestDto;
 import com.example.talepyonetimbackend.talepyonetim.dto.UpdateStatusRequest;
 import com.example.talepyonetimbackend.talepyonetim.exception.ResourceNotFoundException;
-import com.example.talepyonetimbackend.talepyonetim.model.Request;
-import com.example.talepyonetimbackend.talepyonetim.model.RequestStatus;
-import com.example.talepyonetimbackend.talepyonetim.model.User;
+import com.example.talepyonetimbackend.talepyonetim.model.*;
 import com.example.talepyonetimbackend.talepyonetim.repository.RequestRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +38,18 @@ public class RequestService {
         request.setStatus(RequestStatus.PENDING);
         request.setRequester(currentUser);
         request.setRequesterName(currentUser.getFirstName() + " " + currentUser.getLastName());
+        
+        // Üretim departmanı tarafından oluşturuldu mu?
+        if (requestDto.isCreatedByProduction()) {
+            request.setCreatedByProduction(true);
+        }
+        
+        // Satış talebi ile ilişkilendirme
+        if (requestDto.getSalesRequestId() != null) {
+            // Normalde burada salesRequestRepository'den ilgili talebi çekecektik
+            // Ancak şu anda öncelik hatanın çözülmesi olduğu için ilşkiyi sonra kurabiliriz
+            // TODO: Satış talebi ile ilişkilendirme yap
+        }
 
         Request savedRequest = requestRepository.save(request);
 
@@ -178,6 +188,36 @@ public class RequestService {
         return mapToDto(savedRequest);
     }
 
+    @Transactional
+    public Request createRequestForOrder(RequestDto requestDto, Order order) {
+        User currentUser = userService.getCurrentUser();
+
+        Request request = Request.builder()
+                .title(requestDto.getTitle())
+                .description(requestDto.getDescription())
+                .quantity(requestDto.getQuantity())
+                .unit(requestDto.getUnit())
+                .urgency(requestDto.getUrgency())
+                .status(RequestStatus.PENDING)
+                .requester(currentUser)
+                .requesterName(currentUser.getFullName())
+                .order(order)
+                .build();
+
+        return requestRepository.save(request);
+    }
+    
+    public List<RequestDto> getRequestsByProductionDepartment() {
+        List<Request> requests = requestRepository.findByCreatedByProductionIsTrue();
+        return requests.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+    
+    public RequestDto convertToDto(Request request) {
+        return mapToDto(request);
+    }
+    
     private RequestDto mapToDto(Request request) {
         RequestDto dto = new RequestDto();
         dto.setId(request.getId());
@@ -190,6 +230,17 @@ public class RequestService {
         dto.setRequesterName(request.getRequesterName());
         dto.setApproverName(request.getApproverName());
         dto.setReceiverName(request.getReceiverName());
+        
+        // Yeni alanlar
+        if (request.getOrder() != null) {
+            dto.setOrderId(request.getOrder().getId());
+        }
+        
+        dto.setCreatedByProduction(request.isCreatedByProduction());
+        
+        if (request.getSalesRequest() != null) {
+            dto.setSalesRequestId(request.getSalesRequest().getId());
+        }
         dto.setComment(request.getComment());
         dto.setOrderNumber(request.getOrderNumber());
         dto.setOrderDate(request.getOrderDate());

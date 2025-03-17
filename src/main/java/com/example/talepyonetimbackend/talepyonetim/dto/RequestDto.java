@@ -17,7 +17,6 @@ public class RequestDto {
     @NotBlank(message = "Başlık gerekli")
     private String title;
 
-    @NotBlank(message = "Açıklama gerekli")
     private String description;
 
     @NotNull(message = "Miktar gerekli")
@@ -45,4 +44,13 @@ public class RequestDto {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    
+    // Sipariş için
+    private Long orderId;
+    
+    // Üretim departmanı tarafından oluşturuldu mu?
+    private boolean createdByProduction;
+    
+    // Satış ve pazarlama talebi ile ilişki
+    private Long salesRequestId;
 }
