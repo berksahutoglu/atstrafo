@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "sales_and_marketing_requests")
@@ -77,4 +79,8 @@ public class SalesAndMarketingRequest {
     public boolean isDomestic() {
         return this.marketType == MarketType.DOMESTIC;
     }
+    
+    // Dosya ekleri
+    @OneToMany(mappedBy = "salesRequest", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Attachment> attachments = new ArrayList<>();
 }
