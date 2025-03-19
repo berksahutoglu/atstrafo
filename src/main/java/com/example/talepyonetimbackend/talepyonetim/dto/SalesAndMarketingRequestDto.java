@@ -23,6 +23,9 @@ public class SalesAndMarketingRequestDto {
     @NotBlank(message = "Ülke bilgisi gereklidir")
     private String country; // ülke
     
+    @NotBlank(message = "Müşteri ismi gereklidir")
+    private String customerName; // müşteri ismi
+    
     @NotBlank(message = "Güç bilgisi gereklidir")
     private String power; // güç
     
@@ -32,6 +35,12 @@ public class SalesAndMarketingRequestDto {
     
     @NotBlank(message = "Çıkış gücü bilgisi gereklidir")
     private String outputPower; // çıkış gücü
+    
+    @NotBlank(message = "Kazan tipi gereklidir")
+    private String boilerType; // kazan tipi
+    
+    @NotBlank(message = "Sargı tipi gereklidir")
+    private String windingType; // sargı tipi
     
     // Yurtiçi ise a plus/normal
     private boolean isAPlus;

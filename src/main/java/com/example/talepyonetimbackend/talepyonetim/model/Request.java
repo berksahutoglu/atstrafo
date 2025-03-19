@@ -69,6 +69,8 @@ public class Request {
     private String orderNumber;
 
     private LocalDateTime orderDate;
+    
+    private LocalDateTime estimatedDeliveryDate; // Tahmini Termin Tarihi
 
     private String deliveryNotes;
 

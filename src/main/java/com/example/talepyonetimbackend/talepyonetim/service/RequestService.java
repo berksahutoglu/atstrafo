@@ -116,6 +116,11 @@ public class RequestService {
         if (updateRequest.getStatus() == RequestStatus.ORDERED) {
             request.setOrderNumber(updateRequest.getOrderNumber());
             request.setOrderDate(LocalDateTime.now());
+            
+            // Tahmini teslim tarihini de kaydet
+            if (updateRequest.getEstimatedDeliveryDate() != null) {
+                request.setEstimatedDeliveryDate(updateRequest.getEstimatedDeliveryDate().atStartOfDay());
+            }
         }
 
         Request savedRequest = requestRepository.save(request);
@@ -244,6 +249,7 @@ public class RequestService {
         dto.setComment(request.getComment());
         dto.setOrderNumber(request.getOrderNumber());
         dto.setOrderDate(request.getOrderDate());
+        dto.setEstimatedDeliveryDate(request.getEstimatedDeliveryDate());
         dto.setDeliveryNotes(request.getDeliveryNotes());
         dto.setDeliveryDate(request.getDeliveryDate());
         dto.setCreatedAt(request.getCreatedAt());

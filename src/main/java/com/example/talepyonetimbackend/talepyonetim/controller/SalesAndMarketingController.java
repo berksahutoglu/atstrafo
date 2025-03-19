@@ -47,11 +47,25 @@ public class SalesAndMarketingController {
     public ResponseEntity<List<SalesAndMarketingRequestDto>> getProcessingSalesRequests() {
         return ResponseEntity.ok(salesService.getProcessingSalesRequests());
     }
+    @GetMapping("/all")
+    @PreAuthorize("hasAnyAuthority('ROLE_PRODUCTION', 'ROLE_SALESANDMARKETING')")
+    public ResponseEntity<List<SalesAndMarketingRequestDto>> getAllSalesRequests() {
+        return ResponseEntity.ok(salesService.getAllSalesRequests());
+    }
+
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_SALESANDMARKETING', 'ROLE_PRODUCTION')")
     public ResponseEntity<SalesAndMarketingRequestDto> getSalesRequestById(@PathVariable Long id) {
         return ResponseEntity.ok(salesService.getSalesRequestById(id));
+    }
+    
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ROLE_SALESANDMARKETING')")
+    public ResponseEntity<SalesAndMarketingRequestDto> updateSalesRequest(
+            @PathVariable Long id,
+            @Valid @RequestBody SalesAndMarketingRequestDto requestDto) {
+        return ResponseEntity.ok(salesService.updateSalesRequest(id, requestDto));
     }
 
     @PostMapping("/{id}/convert")

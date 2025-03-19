@@ -54,9 +54,12 @@ public class SalesAndMarketingService {
         SalesAndMarketingRequest request = SalesAndMarketingRequest.builder()
                 .marketType(marketType)
                 .country(dto.getCountry())
+                .customerName(dto.getCustomerName())
                 .power(dto.getPower())
                 .quantity(dto.getQuantity())
                 .outputPower(dto.getOutputPower())
+                .boilerType(dto.getBoilerType())
+                .windingType(dto.getWindingType())
                 .isAPlus(marketType == MarketType.DOMESTIC && dto.isAPlus())
                 .requestedDeliveryDate(dto.getRequestedDeliveryDate())
                 .createdBy(currentUser)
@@ -77,6 +80,11 @@ public class SalesAndMarketingService {
     
     public List<SalesAndMarketingRequestDto> getPendingSalesRequests() {
         List<SalesAndMarketingRequest> requests = salesRepository.findByStatus(SalesRequestStatus.PENDING);
+        return requests.stream().map(this::convertToDto).collect(Collectors.toList());
+    }
+
+    public List<SalesAndMarketingRequestDto> getAllSalesRequests() {
+        List<SalesAndMarketingRequest> requests = salesRepository.findAll();
         return requests.stream().map(this::convertToDto).collect(Collectors.toList());
     }
     
@@ -114,6 +122,54 @@ public class SalesAndMarketingService {
         return requests.stream().map(this::convertToDto).collect(Collectors.toList());
     }
     
+    @Transactional
+    public SalesAndMarketingRequestDto updateSalesRequest(Long id, SalesAndMarketingRequestDto dto) {
+        // Güncel kullanıcıyı al
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        User currentUser = userService.getUserByUsername(authentication.getName());
+        
+        // Var olan talebi bul
+        SalesAndMarketingRequest existingRequest = salesRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Satış talebi bulunamadı: " + id));
+        
+        // Sadece talebin sahibi düzenleyebilir
+        if (!existingRequest.getCreatedBy().getId().equals(currentUser.getId())) {
+            throw new IllegalStateException("Bu talebi sadece oluşturan kişi düzenleyebilir.");
+        }
+        
+        // Talep zaten işlemde veya dönüştürülmüş durumda ise düzenlenemez
+        if (existingRequest.getStatus() != SalesRequestStatus.PENDING) {
+            throw new IllegalStateException("Bu talep zaten işleme alınmış, düzenlenemez.");
+        }
+        
+        // İstemci tarafından gönderilen isDomestic alanını marketType'a dönüştür
+        MarketType marketType = MarketType.DOMESTIC; // Varsayılan olarak yurtiçi
+        
+        // Eğer isDomestic alanı gönderilmişse ve false ise, INTERNATIONAL yapalım
+        if (dto.getIsDomestic() != null && !dto.getIsDomestic()) {
+            marketType = MarketType.INTERNATIONAL;
+        } else if (dto.getMarketType() != null) {
+            // Veya zaten marketType gönderilmişse onu kullanalım
+            marketType = dto.getMarketType();
+        }
+        
+        // Güncelleme işlemleri
+        existingRequest.setMarketType(marketType);
+        existingRequest.setCountry(dto.getCountry());
+        existingRequest.setCustomerName(dto.getCustomerName());
+        existingRequest.setPower(dto.getPower());
+        existingRequest.setQuantity(dto.getQuantity());
+        existingRequest.setOutputPower(dto.getOutputPower());
+        existingRequest.setBoilerType(dto.getBoilerType());
+        existingRequest.setWindingType(dto.getWindingType());
+        existingRequest.setAPlus(marketType == MarketType.DOMESTIC && dto.isAPlus());
+        existingRequest.setRequestedDeliveryDate(dto.getRequestedDeliveryDate());
+        existingRequest.setNotes(dto.getNotes());
+        
+        SalesAndMarketingRequest updatedRequest = salesRepository.save(existingRequest);
+        return convertToDto(updatedRequest);
+    }
+    
     private String generateTitle(SalesAndMarketingRequest salesRequest) {
         String country = salesRequest.getCountry();
         String power = salesRequest.getPower();
@@ -137,9 +193,12 @@ public class SalesAndMarketingService {
         description.append("Satış ve Pazarlama Talebi #").append(salesRequest.getId()).append("\n\n");
         description.append("Pazar: ").append(salesRequest.getMarketType() == MarketType.DOMESTIC ? "Yurtiçi" : "Yurtdışı").append("\n");
         description.append("Ülke: ").append(salesRequest.getCountry()).append("\n");
+        description.append("Müşteri: ").append(salesRequest.getCustomerName()).append("\n");
         description.append("Güç: ").append(salesRequest.getPower()).append("\n");
         description.append("Adet: ").append(salesRequest.getQuantity()).append("\n");
         description.append("Çıkış Gücü: ").append(salesRequest.getOutputPower()).append("\n");
+        description.append("Kazan Tipi: ").append(salesRequest.getBoilerType()).append("\n");
+        description.append("Sargı Tipi: ").append(salesRequest.getWindingType()).append("\n");
         
         if (salesRequest.getMarketType() == MarketType.DOMESTIC) {
             description.append("Sınıf: ").append(salesRequest.isAPlus() ? "A+" : "Normal").append("\n");
@@ -163,9 +222,12 @@ public class SalesAndMarketingService {
         dto.setIsDomestic(request.getMarketType() == MarketType.DOMESTIC);
         
         dto.setCountry(request.getCountry());
+        dto.setCustomerName(request.getCustomerName());
         dto.setPower(request.getPower());
         dto.setQuantity(request.getQuantity());
         dto.setOutputPower(request.getOutputPower());
+        dto.setBoilerType(request.getBoilerType());
+        dto.setWindingType(request.getWindingType());
         dto.setAPlus(request.isAPlus());
         dto.setRequestedDeliveryDate(request.getRequestedDeliveryDate());
         dto.setCreatedByName(request.getCreatedBy().getFullName());

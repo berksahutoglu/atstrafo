@@ -31,6 +31,9 @@ public class SalesAndMarketingRequest {
     private String country; // ülke
 
     @Column(nullable = false)
+    private String customerName; // müşteri ismi
+
+    @Column(nullable = false)
     private String power; // güç
 
     @Column(nullable = false)
@@ -38,6 +41,12 @@ public class SalesAndMarketingRequest {
 
     @Column(nullable = false)
     private String outputPower; // çıkış gücü
+
+    @Column(nullable = false)
+    private String boilerType; // kazan tipi
+
+    @Column(nullable = false)
+    private String windingType; // sargı tipi
 
     // Yurtiçi ise a plus/normal
     private boolean isAPlus;
