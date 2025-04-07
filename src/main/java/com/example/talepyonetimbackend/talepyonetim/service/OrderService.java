@@ -22,22 +22,28 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@org.springframework.context.annotation.Lazy
 public class OrderService {
 
     private final OrderRepository orderRepository;
     private final RequestRepository requestRepository;
-    private final RequestService requestService;
+    private RequestService requestService;
+
     private final UserService userService;
 
     @Autowired
     public OrderService(OrderRepository orderRepository, 
                        RequestRepository requestRepository,
-                       RequestService requestService,
                        UserService userService) {
         this.orderRepository = orderRepository;
         this.requestRepository = requestRepository;
-        this.requestService = requestService;
         this.userService = userService;
+    }
+    
+    @Autowired
+    @org.springframework.context.annotation.Lazy
+    public void setRequestService(RequestService requestService) {
+        this.requestService = requestService;
     }
 
     @Transactional

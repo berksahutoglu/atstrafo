@@ -70,8 +70,13 @@ public class SalesAndMarketingRequest {
     private String notes;
 
     // Üretimle ilişki
-    @OneToOne(mappedBy = "salesRequest")
-    private Request productionRequest;
+    @OneToMany(mappedBy = "salesRequest")
+    private List<Request> productionRequests = new ArrayList<>();
+    
+    // Proje ilişkisi
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id")
+    private Project project;
 
     @PrePersist
     protected void onCreate() {

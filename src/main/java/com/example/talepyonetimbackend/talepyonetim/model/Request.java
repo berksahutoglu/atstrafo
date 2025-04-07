@@ -87,12 +87,17 @@ public class Request {
     private Order order;
     
     // Satış ve Pazarlama talebinden dönüştürüldü mü?
-    @OneToOne
-    @JoinColumn(name = "sales_request_id")
+    @ManyToOne
+    @JoinColumn(name = "sales_request_id", unique = false)
     private SalesAndMarketingRequest salesRequest;
     
     // Üretim departmanı tarafından oluşturuldu mu?
     private boolean createdByProduction = false;
+    
+    // Proje ilişkisi
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id")
+    private Project project;
 
     @PrePersist
     protected void onCreate() {

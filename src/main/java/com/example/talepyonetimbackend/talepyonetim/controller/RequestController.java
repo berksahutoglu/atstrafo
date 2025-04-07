@@ -67,6 +67,20 @@ public class RequestController {
     public ResponseEntity<List<RequestDto>> getProductionRequests() {
         return ResponseEntity.ok(requestService.getRequestsByProductionDepartment());
     }
+    
+    // Bekleyen üretim taleplerini getiren endpoint
+    @GetMapping("/production/pending")
+    @PreAuthorize("hasAuthority('ROLE_APPROVER')")
+    public ResponseEntity<List<RequestDto>> getPendingProductionRequests() {
+        return ResponseEntity.ok(requestService.getPendingProductionRequests());
+    }
+    
+    // Bir projeye ait talepleri getiren endpoint
+    @GetMapping("/project/{projectId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_APPROVER', 'ROLE_PRODUCTION')")
+    public ResponseEntity<List<RequestDto>> getRequestsByProject(@PathVariable Long projectId) {
+        return ResponseEntity.ok(requestService.getRequestsByProjectId(projectId));
+    }
 
     @PutMapping("/{id}/status")
     @PreAuthorize("hasAuthority('ROLE_APPROVER')")
@@ -98,4 +112,5 @@ public class RequestController {
             @Valid @RequestBody RequestDto requestDto) {
         return ResponseEntity.ok(requestService.updateRequest(id, requestDto));
     }
+
 }

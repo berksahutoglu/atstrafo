@@ -5,7 +5,9 @@ import com.example.talepyonetimbackend.talepyonetim.dto.RequestDto;
 import com.example.talepyonetimbackend.talepyonetim.dto.UpdateStatusRequest;
 import com.example.talepyonetimbackend.talepyonetim.exception.ResourceNotFoundException;
 import com.example.talepyonetimbackend.talepyonetim.model.*;
+import com.example.talepyonetimbackend.talepyonetim.repository.ProjectRepository;
 import com.example.talepyonetimbackend.talepyonetim.repository.RequestRepository;
+import com.example.talepyonetimbackend.talepyonetim.repository.SalesAndMarketingRequestRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,14 +17,27 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@org.springframework.context.annotation.Lazy
 public class RequestService {
 
     private final RequestRepository requestRepository;
     private final UserService userService;
+    private final ProjectRepository projectRepository;
+    private final SalesAndMarketingRequestRepository salesRequestRepository;
+    private SalesAndMarketingService salesAndMarketingService;
 
-    public RequestService(RequestRepository requestRepository, UserService userService) {
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.context.annotation.Lazy
+    public void setSalesAndMarketingService(SalesAndMarketingService salesAndMarketingService) {
+        this.salesAndMarketingService = salesAndMarketingService;
+    }
+
+    public RequestService(RequestRepository requestRepository, UserService userService, ProjectRepository projectRepository, 
+                    SalesAndMarketingRequestRepository salesRequestRepository) {
         this.requestRepository = requestRepository;
         this.userService = userService;
+        this.projectRepository = projectRepository;
+        this.salesRequestRepository = salesRequestRepository;
     }
 
     @Transactional
@@ -46,9 +61,16 @@ public class RequestService {
         
         // Satış talebi ile ilişkilendirme
         if (requestDto.getSalesRequestId() != null) {
-            // Normalde burada salesRequestRepository'den ilgili talebi çekecektik
-            // Ancak şu anda öncelik hatanın çözülmesi olduğu için ilşkiyi sonra kurabiliriz
-            // TODO: Satış talebi ile ilişkilendirme yap
+            SalesAndMarketingRequest salesRequest = salesRequestRepository.findById(requestDto.getSalesRequestId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Satış talebi bulunamadı: " + requestDto.getSalesRequestId()));
+            request.setSalesRequest(salesRequest);
+        }
+        
+        // Proje ilişkisini kur
+        if (requestDto.getProjectId() != null) {
+            Project project = projectRepository.findById(requestDto.getProjectId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Proje bulunamadı: " + requestDto.getProjectId()));
+            request.setProject(project);
         }
 
         Request savedRequest = requestRepository.save(request);
@@ -121,6 +143,23 @@ public class RequestService {
             if (updateRequest.getEstimatedDeliveryDate() != null) {
                 request.setEstimatedDeliveryDate(updateRequest.getEstimatedDeliveryDate().atStartOfDay());
             }
+            
+            // Eğer bu talep bir satış talebine bağlı ise ve bu satış talebiyle ilişkili tüm talepler ORDERED durumundaysa
+            // satış talebinin durumunu da ORDERED olarak güncelle
+            if (request.getSalesRequest() != null) {
+                Long salesRequestId = request.getSalesRequest().getId();
+                // İlişkili tüm talepleri bul
+                List<Request> relatedRequests = requestRepository.findBySalesRequest_Id(salesRequestId);
+                
+                // Tüm talepler ORDERED durumunda mı kontrol et
+                boolean allOrdered = relatedRequests.stream()
+                        .allMatch(req -> req.getId().equals(requestId) || req.getStatus() == RequestStatus.ORDERED);
+                
+                // Eğer tüm talepler ORDERED durumundaysa, satış talebini de ORDERED olarak güncelle
+                if (allOrdered) {
+                    salesAndMarketingService.updateSalesRequestStatus(salesRequestId, SalesRequestStatus.ORDERED);
+                }
+            }
         }
 
         Request savedRequest = requestRepository.save(request);
@@ -188,6 +227,15 @@ public class RequestService {
         request.setUnit(requestDto.getUnit());
         request.setUrgency(requestDto.getUrgency());
         
+        // Proje ilişkisini güncelle
+        if (requestDto.getProjectId() != null) {
+            Project project = projectRepository.findById(requestDto.getProjectId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Proje bulunamadı: " + requestDto.getProjectId()));
+            request.setProject(project);
+        } else {
+            request.setProject(null); // Proje seçimi kaldırıldıysa
+        }
+        
         Request savedRequest = requestRepository.save(request);
         
         return mapToDto(savedRequest);
@@ -219,6 +267,20 @@ public class RequestService {
                 .collect(Collectors.toList());
     }
     
+    public List<RequestDto> getPendingProductionRequests() {
+        List<Request> requests = requestRepository.findByCreatedByProductionIsTrueAndStatusOrderByUrgencyAscCreatedAtAsc(RequestStatus.PENDING);
+        return requests.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+    
+    public List<RequestDto> getRequestsByProjectId(Long projectId) {
+        List<Request> requests = requestRepository.findByProjectIdOrderByCreatedAtDesc(projectId);
+        return requests.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+    
     public RequestDto convertToDto(Request request) {
         return mapToDto(request);
     }
@@ -245,6 +307,12 @@ public class RequestService {
         
         if (request.getSalesRequest() != null) {
             dto.setSalesRequestId(request.getSalesRequest().getId());
+        }
+        
+        // Proje bilgisini ekle
+        if (request.getProject() != null) {
+            dto.setProjectId(request.getProject().getId());
+            dto.setProjectName(request.getProject().getName());
         }
         dto.setComment(request.getComment());
         dto.setOrderNumber(request.getOrderNumber());

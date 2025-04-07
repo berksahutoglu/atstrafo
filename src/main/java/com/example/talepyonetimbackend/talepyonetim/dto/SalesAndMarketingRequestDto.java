@@ -58,6 +58,18 @@ public class SalesAndMarketingRequestDto {
     
     private String notes;
     
-    // İlişkili üretim talebi bilgisi
-    private RequestDto productionRequest;
+    // İlişkili üretim talepleri bilgisi
+    private java.util.List<RequestDto> productionRequests;
+    
+    // Proje bilgisi
+    private Long projectId;
+    private String projectName;
+    
+    // Geriye uyumluluk için getter metodu
+    public RequestDto getProductionRequest() {
+        if (productionRequests != null && !productionRequests.isEmpty()) {
+            return productionRequests.get(0);
+        }
+        return null;
+    }
 }

@@ -54,4 +54,8 @@ public class RequestDto {
     
     // Satış ve pazarlama talebi ile ilişki
     private Long salesRequestId;
+    
+    // Proje bilgisi
+    private Long projectId;
+    private String projectName;
 }

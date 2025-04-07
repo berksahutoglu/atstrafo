@@ -1,5 +1,6 @@
 package com.example.talepyonetimbackend.talepyonetim.repository;
 
+import com.example.talepyonetimbackend.talepyonetim.model.Project;
 import com.example.talepyonetimbackend.talepyonetim.model.SalesAndMarketingRequest;
 import com.example.talepyonetimbackend.talepyonetim.model.SalesRequestStatus;
 import com.example.talepyonetimbackend.talepyonetim.model.User;
@@ -15,4 +16,10 @@ public interface SalesAndMarketingRequestRepository extends JpaRepository<SalesA
     List<SalesAndMarketingRequest> findByStatus(SalesRequestStatus status);
     
     List<SalesAndMarketingRequest> findByStatusIn(List<SalesRequestStatus> statuses);
+    
+    List<SalesAndMarketingRequest> findByProject(Project project);
+    
+    List<SalesAndMarketingRequest> findByProjectAndStatus(Project project, SalesRequestStatus status);
+    
+    List<SalesAndMarketingRequest> findByProjectAndStatusIn(Project project, List<SalesRequestStatus> statuses);
 }

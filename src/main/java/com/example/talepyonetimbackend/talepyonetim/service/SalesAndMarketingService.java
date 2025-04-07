@@ -4,6 +4,7 @@ import com.example.talepyonetimbackend.talepyonetim.dto.RequestDto;
 import com.example.talepyonetimbackend.talepyonetim.dto.SalesAndMarketingRequestDto;
 import com.example.talepyonetimbackend.talepyonetim.exception.ResourceNotFoundException;
 import com.example.talepyonetimbackend.talepyonetim.model.*;
+import com.example.talepyonetimbackend.talepyonetim.repository.ProjectRepository;
 import com.example.talepyonetimbackend.talepyonetim.repository.RequestRepository;
 import com.example.talepyonetimbackend.talepyonetim.repository.SalesAndMarketingRequestRepository;
 import jakarta.transaction.Transactional;
@@ -12,26 +13,39 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@org.springframework.context.annotation.Lazy
 public class SalesAndMarketingService {
 
     private final SalesAndMarketingRequestRepository salesRepository;
     private final RequestRepository requestRepository;
     private final UserService userService;
-    private final RequestService requestService;
+    private RequestService requestService;
+
+    private final ProjectRepository projectRepository;
 
     @Autowired
     public SalesAndMarketingService(SalesAndMarketingRequestRepository salesRepository,
                                    RequestRepository requestRepository,
                                    UserService userService,
-                                   RequestService requestService) {
+                                   ProjectRepository projectRepository) {
         this.salesRepository = salesRepository;
         this.requestRepository = requestRepository;
         this.userService = userService;
+        this.projectRepository = projectRepository;
+    }
+    
+    @Autowired
+    @org.springframework.context.annotation.Lazy
+    public void setRequestService(RequestService requestService) {
         this.requestService = requestService;
     }
 
@@ -51,6 +65,13 @@ public class SalesAndMarketingService {
             marketType = dto.getMarketType();
         }
         
+        // Proje ID varsa ilgili projeyi bul
+        Project project = null;
+        if (dto.getProjectId() != null) {
+            project = projectRepository.findById(dto.getProjectId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Proje bulunamadı: " + dto.getProjectId()));
+        }
+        
         SalesAndMarketingRequest request = SalesAndMarketingRequest.builder()
                 .marketType(marketType)
                 .country(dto.getCountry())
@@ -65,6 +86,7 @@ public class SalesAndMarketingService {
                 .createdBy(currentUser)
                 .status(SalesRequestStatus.PENDING)
                 .notes(dto.getNotes())
+                .project(project) // proje ilişkisini ekle
                 .build();
         
         SalesAndMarketingRequest savedRequest = salesRepository.save(request);
@@ -153,6 +175,13 @@ public class SalesAndMarketingService {
             marketType = dto.getMarketType();
         }
         
+        // Proje ID değiştiyse ilgili projeyi bul
+        Project project = null;
+        if (dto.getProjectId() != null) {
+            project = projectRepository.findById(dto.getProjectId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Proje bulunamadı: " + dto.getProjectId()));
+        }
+        
         // Güncelleme işlemleri
         existingRequest.setMarketType(marketType);
         existingRequest.setCountry(dto.getCountry());
@@ -165,6 +194,7 @@ public class SalesAndMarketingService {
         existingRequest.setAPlus(marketType == MarketType.DOMESTIC && dto.isAPlus());
         existingRequest.setRequestedDeliveryDate(dto.getRequestedDeliveryDate());
         existingRequest.setNotes(dto.getNotes());
+        existingRequest.setProject(project); // proje ilişkisini güncelle
         
         SalesAndMarketingRequest updatedRequest = salesRepository.save(existingRequest);
         return convertToDto(updatedRequest);
@@ -213,6 +243,58 @@ public class SalesAndMarketingService {
         return description.toString();
     }
     
+    // Proje ID'sine göre satış taleplerini getir
+    public List<SalesAndMarketingRequestDto> getRequestsByProjectId(Long projectId) {
+        // Projenin var olup olmadığını kontrol et
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Proje bulunamadı: " + projectId));
+        
+        // Projeye ait talepleri getir
+        List<SalesAndMarketingRequest> requests = salesRepository.findByProject(project);
+        return requests.stream().map(this::convertToDto).collect(Collectors.toList());
+    }
+    
+    // Proje ID'si ve durumuna göre satış taleplerini getir
+    public List<SalesAndMarketingRequestDto> getRequestsByProjectIdAndStatus(Long projectId, SalesRequestStatus status) {
+        // Projenin var olup olmadığını kontrol et
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Proje bulunamadı: " + projectId));
+        
+        // Projeye ait ve belirli durumdaki talepleri getir
+        List<SalesAndMarketingRequest> requests = salesRepository.findByProjectAndStatus(project, status);
+        return requests.stream().map(this::convertToDto).collect(Collectors.toList());
+    }
+    
+    // Belirli durumlardaki satış taleplerini getir
+    public List<SalesAndMarketingRequestDto> getRequestsByStatusList(List<SalesRequestStatus> statuses) {
+        List<SalesAndMarketingRequest> requests = salesRepository.findByStatusIn(statuses);
+        return requests.stream().map(this::convertToDto).collect(Collectors.toList());
+    }
+    
+    // Proje istatistiklerini getir
+    public Map<String, Object> getProjectStats() {
+        Map<String, Object> stats = new HashMap<>();
+        
+        // Tüm projeler
+        List<Project> allProjects = projectRepository.findAll();
+        stats.put("totalProjects", allProjects.size());
+        
+        // Durumlara göre proje sayıları
+        Map<ProjectStatus, Long> projectCountsByStatus = allProjects.stream()
+                .collect(Collectors.groupingBy(Project::getStatus, Collectors.counting()));
+        stats.put("projectsByStatus", projectCountsByStatus);
+        
+        // Proje başına talep sayıları
+        Map<String, Integer> requestCountsByProject = new HashMap<>();
+        for (Project project : allProjects) {
+            List<SalesAndMarketingRequest> requests = salesRepository.findByProject(project);
+            requestCountsByProject.put(project.getName(), requests.size());
+        }
+        stats.put("requestsByProject", requestCountsByProject);
+        
+        return stats;
+    }
+
     public SalesAndMarketingRequestDto convertToDto(SalesAndMarketingRequest request) {
         SalesAndMarketingRequestDto dto = new SalesAndMarketingRequestDto();
         dto.setId(request.getId());
@@ -236,10 +318,36 @@ public class SalesAndMarketingService {
         dto.setStatus(request.getStatus());
         dto.setNotes(request.getNotes());
         
-        if (request.getProductionRequest() != null) {
-            dto.setProductionRequest(requestService.convertToDto(request.getProductionRequest()));
+        // Proje bilgisini ekle
+        if (request.getProject() != null) {
+            dto.setProjectId(request.getProject().getId());
+            dto.setProjectName(request.getProject().getName());
+        }
+        
+        // Üretim talepleri bilgisini ekle
+        if (request.getProductionRequests() != null && !request.getProductionRequests().isEmpty()) {
+            java.util.List<RequestDto> requestDtos = new java.util.ArrayList<>();
+            for (Request req : request.getProductionRequests()) {
+                requestDtos.add(requestService.convertToDto(req));
+            }
+            dto.setProductionRequests(requestDtos);
+        } else {
+            dto.setProductionRequests(new java.util.ArrayList<>());
         }
         
         return dto;
     }
+
+    @Transactional
+    public SalesAndMarketingRequestDto updateSalesRequestStatus(Long id, SalesRequestStatus newStatus) {
+        SalesAndMarketingRequest salesRequest = salesRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Satış talebi bulunamadı: " + id));
+
+        // Durumu güncelle
+        salesRequest.setStatus(newStatus);
+
+        SalesAndMarketingRequest updatedRequest = salesRepository.save(salesRequest);
+        return convertToDto(updatedRequest);
+    }
+
 }
